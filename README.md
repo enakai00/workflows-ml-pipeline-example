@@ -1,5 +1,7 @@
 # workflows-ml-pipeline-example
 
+This example shows how you can use Cloud Run and Cloud Workflows to create a simple ML pipeline. The ML usecase is based on the [babyweight model example](https://github.com/GoogleCloudPlatform/training-data-analyst/blob/master/blogs/babyweight_keras/babyweight.ipynb).
+
 ## Deploy services
 
 Set environment variables and create a storage bucket.
@@ -113,26 +115,26 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 [OUTPUT]
 ```
 {
-  "createTime": "2020-12-14T01:02:10Z",
-  "etag": "TdMwRe0dgG8=",
-  "jobId": "train_babyweight_1bcc7451_e887_4fb9_acf2_7ce3cda4b363",
+  "createTime": "2020-12-14T08:24:12Z",
+  "etag": "zKM8N6bPpVk=",
+  "jobId": "train_babyweight_e281aab4_5b4f_40cd_8fe3_f8290037b5fc",
   "state": "QUEUED",
   "trainingInput": {
     "args": [
       "--data-dir",
-      "gs://babyweight-keras2-pipeline/preproc/65849499-0ba5-44e0-b32e-d4520a8a18bc",
+      "gs://workflows-ml-pipeline-pipeline/preproc/054aeefe-16d2-4a26-a5c2-611a5ece1583",
       "--num-train-examples",
-      "1000",
+      "5000",
       "--num-eval-examples",
       "1000",
       "--num-evals",
-      "1",
+      "2",
       "--learning-rate",
       "0.0001"
     ],
-    "jobDir": "gs://babyweight-keras2-pipeline/trained_model/1bcc7451-e887-4fb9-acf2-7ce3cda4b363",
+    "jobDir": "gs://workflows-ml-pipeline-pipeline/trained_model/e281aab4-5b4f-40cd-8fe3-f8290037b5fc",
     "packageUris": [
-      "gs://babyweight-keras2-pipeline/trained_model/1bcc7451-e887-4fb9-acf2-7ce3cda4b363/trainer-0.0.0.tar.gz"
+      "gs://workflows-ml-pipeline-pipeline/trained_model/e281aab4-5b4f-40cd-8fe3-f8290037b5fc/trainer-0.0.0.tar.gz"
     ],
     "pythonModule": "trainer.task",
     "pythonVersion": "3.7",
@@ -144,31 +146,37 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 }
 ```
 
+The trained model will be stored under `jobDir`.
+
 ```shell
-JOBID="train_babyweight_1bcc7451_e887_4fb9_acf2_7ce3cda4b363"
+JOB_DIR="gs://workflows-ml-pipeline-pipeline/trained_model/e281aab4-5b4f-40cd-8fe3-f8290037b5fc"
+```
+
+Check the job status.
+
+```shell
+JOB_ID="train_babyweight_e281aab4_5b4f_40cd_8fe3_f8290037b5fc"
 curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
-  -s $TRAIN_SERVICE_URL/api/v1/job/$JOBID | jq .
+  -s $TRAIN_SERVICE_URL/api/v1/job/$JOB_ID | jq .
 ```
 
 [OUTPUT]
 ```
 {
-  "createTime": "2020-12-14T01:02:10Z",
-  "etag": "hzA1lBs5RHE=",
-  "jobId": "train_babyweight_1bcc7451_e887_4fb9_acf2_7ce3cda4b363",
-  "startTime": "2020-12-14T01:07:08Z",
-  "state": "SUCCEEDED",
-...
-    "jobDir": "gs://babyweight-keras2-pipeline/trained_model/1bcc7451-e887-4fb9-acf2-7ce3cda4b363",
+  "createTime": "2020-12-14T08:24:12Z",
+  "etag": "rW+uQQbA6bM=",
+  "jobId": "train_babyweight_e281aab4_5b4f_40cd_8fe3_f8290037b5fc",
+  "state": "PREPARING",
 ...
 }
 ```
 
+Wait until `state` becomes `SUCCEEDED`. Then execute the model deployment job.
+
 ```shell
-JOBDIR="gs://babyweight-keras2-pipeline/trained_model/1bcc7451-e887-4fb9-acf2-7ce3cda4b363"
 curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
-  -d "{\"modelName\": \"babyweight_model\", \"versionName\": \"v1\", \"deploymentUri\": \"$JOBDIR/export\"}" \
+  -d "{\"modelName\": \"babyweight_model\", \"versionName\": \"v1\", \"deploymentUri\": \"$JOB_DIR/export\"}" \
  -s $TRAIN_SERVICE_URL/api/v1/deploy | jq .
 ```
 
@@ -177,25 +185,27 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 {
   "metadata": {
     "@type": "type.googleapis.com/google.cloud.ml.v1.OperationMetadata",
-    "createTime": "2020-12-14T01:11:02Z",
-    "modelName": "projects/babyweight-keras2/models/babyweight_model",
+    "createTime": "2020-12-14T08:34:36Z",
+    "modelName": "projects/workflows-ml-pipeline/models/babyweight_model",
     "operationType": "CREATE_VERSION",
     "version": {
-      "createTime": "2020-12-14T01:11:01Z",
-      "deploymentUri": "gs://babyweight-keras2-pipeline/trained_model/1bcc7451-e887-4fb9-acf2-7ce3cda4b363/export",
-      "etag": "24SGjgPmN/k=",
+      "createTime": "2020-12-14T08:34:35Z",
+      "deploymentUri": "gs://workflows-ml-pipeline-pipeline/trained_model/e281aab4-5b4f-40cd-8fe3-f8290037b5fc/export",
+      "etag": "BlXqEgx9VQg=",
       "framework": "TENSORFLOW",
       "machineType": "mls1-c1-m2",
-      "name": "projects/babyweight-keras2/models/babyweight_model/versions/v1",
+      "name": "projects/workflows-ml-pipeline/models/babyweight_model/versions/v1",
       "pythonVersion": "3.7",
       "runtimeVersion": "2.2"
     }
   },
-  "name": "projects/babyweight-keras2/operations/create_babyweight_model_v1-1607908261193"
+  "name": "projects/workflows-ml-pipeline/operations/create_babyweight_model_v1-1607934875576"
 }
 ```
 
+## Automate the pipeline with Cloud Workflows
 
+Create a service account to invoke services on Cloud Run.
 
 ```shell
 SERVICE_ACCOUNT_NAME="cloud-run-invoker"
@@ -207,6 +217,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role=roles/run.invoker
 ```
 
+Deploy the workflow.
+
 ```shell
 cd $HOME/workflows-ml-pipeline-example/workflows
 cp ml_workflow.yaml.template ml_workflow.yaml
@@ -217,7 +229,9 @@ gcloud beta workflows deploy ml_workflow \
   --service-account=$SERVICE_ACCOUNT_EMAIL
 ```
 
+Execute a workflow job.
+
 ```shell
 gcloud beta workflows execute ml_workflow \
-  --data="{\"limit\": 1000, \"bucket\": \"$BUCKET\", \"numTrainExamples\": 1000, \"numEvals\": 1, \"numEvalExamples\": 1000, \"modelName\": \"babyweight\", \"versionName\": \"v1\"}"
+  --data="{\"limit\": 1000, \"bucket\": \"$BUCKET\", \"numTrainExamples\": 5000, \"numEvals\": 2, \"numEvalExamples\": 1000, \"modelName\": \"babyweight\", \"versionName\": \"v2\"}"
 ```
