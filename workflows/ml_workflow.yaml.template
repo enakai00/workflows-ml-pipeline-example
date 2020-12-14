@@ -5,7 +5,7 @@ main:
         steps:
           - assignDefault:
               assign:
-                - limit: None
+                - limit: null
           - assignArgVal:
               switch:
                 - condition: ${"limit" in args}

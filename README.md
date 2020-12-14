@@ -2,7 +2,7 @@
 
 ```shell
 PROJECT_ID='[your project id]'
-GIT_REPO="https://github.com/enakai00/workflows-pipeline-example.git"
+GIT_REPO="https://github.com/enakai00/workflows-ml-pipeline-example.git"
 BUCKET=gs://$PROJECT_ID-pipeline
 gsutil mb $BUCKET
 ```
