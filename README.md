@@ -233,5 +233,5 @@ Execute a workflow job.
 
 ```shell
 gcloud beta workflows execute ml_workflow \
-  --data="{\"limit\": 1000, \"bucket\": \"$BUCKET\", \"numTrainExamples\": 5000, \"numEvals\": 2, \"numEvalExamples\": 1000, \"modelName\": \"babyweight\", \"versionName\": \"v2\"}"
+  --data="{\"limit\": 1000, \"bucket\": \"$BUCKET\", \"numTrainExamples\": 5000, \"numEvals\": 2, \"numEvalExamples\": 1000, \"modelName\": \"babyweight_model\", \"versionName\": \"v2\"}"
 ```
