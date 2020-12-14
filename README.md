@@ -2,6 +2,10 @@
 
 This example shows how you can use [Cloud Run](https://cloud.google.com/run) and [Cloud Workflows](https://cloud.google.com/workflows) to create a simple ML pipeline. The ML usecase is based on the [babyweight model example](https://github.com/GoogleCloudPlatform/training-data-analyst/blob/master/blogs/babyweight_keras/babyweight.ipynb).
 
+
+<img src="https://github.com/enakai00/workflows-ml-pipeline-example/blob/main/docs/img/architecture.png" width="640px">
+
+
 ## Deploy services
 
 Set environment variables and create a storage bucket.
