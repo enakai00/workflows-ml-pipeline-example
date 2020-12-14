@@ -1,14 +1,32 @@
-# workflows-pipeline-example
+# workflows-ml-pipeline-example
+
+## Deploy services
+
+Set environment variables and create a storage bucket.
 
 ```shell
 PROJECT_ID='[your project id]'
 GIT_REPO="https://github.com/enakai00/workflows-ml-pipeline-example.git"
 BUCKET=gs://$PROJECT_ID-pipeline
+
+gcloud config set project $PROJECT_ID
 gsutil mb $BUCKET
 ```
 
+Enable APIs.
+
 ```shell
-cd $HOME/workflows-pipeline-example/services/preprocess
+gcloud services enable run.googleapis.com
+gcloud services enable workflows.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
+gcloud services enable dataflow.googleapis.com
+gcloud services enable ml.googleapis.com
+```
+
+Deploy services on Cloud Run.
+
+```shell
+cd $HOME/workflows-ml-pipeline-example/services/preprocess
 gcloud builds submit --tag gcr.io/$PROJECT_ID/preprocess-service
 gcloud run deploy preprocess-service \
   --image gcr.io/$PROJECT_ID/preprocess-service \
@@ -17,7 +35,7 @@ gcloud run deploy preprocess-service \
   --memory 512Mi \
   --set-env-vars "PROJECT_ID=$PROJECT_ID"
 
-cd $HOME/workflows-pipeline-example/services/train
+cd $HOME/workflows-ml-pipeline-example/services/train
 gcloud builds submit --tag gcr.io/$PROJECT_ID/train-service
 gcloud run deploy train-service \
   --image gcr.io/$PROJECT_ID/train-service \
@@ -26,6 +44,8 @@ gcloud run deploy train-service \
   --memory 512Mi \
   --set-env-vars "PROJECT_ID=$PROJECT_ID,GIT_REPO=$GIT_REPO"
 ```
+
+Get service URLs.
 
 ```shell
 SERVICE_NAME="preprocess-service"
@@ -37,6 +57,10 @@ TRAIN_SERVICE_URL=$(gcloud run services list --platform managed \
     --format="table[no-heading](URL)" --filter="SERVICE:${SERVICE_NAME}")
 ```
 
+## Test services using the curl command
+
+Execute the data preprocessing dataflow job.
+
 ```shell
 curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
@@ -47,33 +71,42 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 [Output]
 ```shell
 {
-  "jobId": "2020-12-13_00_42_47-18156259136194922599",
-  "jobName": "preprocess-babyweight-b7492423-c4fe-4866-93c2-54c782168cd9",
-  "outputDir": "gs://babyweight-keras2-pipeline/preproc/b7492423-c4fe-4866-93c2-54c782168cd9"
+  "jobId": "2020-12-13_23_57_52-4099585880410245609",
+  "jobName": "preprocess-babyweight-054aeefe-16d2-4a26-a5c2-611a5ece1583",
+  "outputDir": "gs://workflows-ml-pipeline-pipeline/preproc/054aeefe-16d2-4a26-a5c2-611a5ece1583"
 }
 ```
 
+The preprocessed data will be stored under `outputDir`.
+
 ```shell
-OUTPUT_DIR="gs://babyweight-keras2-pipeline/preproc/b7492423-c4fe-4866-93c2-54c782168cd9"
-JOBID="2020-12-13_00_42_47-18156259136194922599"
+OUTPUT_DIR="gs://workflows-ml-pipeline-pipeline/preproc/054aeefe-16d2-4a26-a5c2-611a5ece1583"
+```
+
+Check the job status.
+
+```
+JOB_ID="2020-12-13_23_57_52-4099585880410245609"
 curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
-  -s $PREPROCESS_SERVICE_URL/api/v1/job/$JOBID | jq .
+  -s $PREPROCESS_SERVICE_URL/api/v1/job/$JOB_ID | jq .
 ```
 
 [Output]
 ```shell
 {
-  "createTime": "2020-12-13T22:22:41.752648Z",
-  "currentState": "JOB_STATE_DONE",
-  "currentStateTime": "2020-12-13T22:28:17.997861Z",
+  "createTime": "2020-12-14T07:57:54.086857Z",
+  "currentState": "JOB_STATE_RUNNING",
+  "currentStateTime": "2020-12-14T07:57:59.416039Z",
 ...
 }
 ```
 
+Wait until the `currentState` becomes `JOB_STATE_DONE`. Then execute the model training job.
+
 ```shell
 curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 -H "Content-Type: application/json" \
--d "{\"jobDir\": \"$BUCKET/trained_model\", \"dataDir\": \"$OUTPUT_DIR\", \"numTrainExamples\": 1000, \"numEvals\": 1, \"numEvalExamples\": 1000}" \
+-d "{\"jobDir\": \"$BUCKET/trained_model\", \"dataDir\": \"$OUTPUT_DIR\", \"numTrainExamples\": 5000, \"numEvals\": 2, \"numEvalExamples\": 1000}" \
 -s $TRAIN_SERVICE_URL/api/v1/train | jq .
 ```
 
@@ -175,7 +208,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ```
 
 ```shell
-cd $HOME/workflows-pipeline-example/workflows
+cd $HOME/workflows-ml-pipeline-example/workflows
 cp ml_workflow.yaml.template ml_workflow.yaml
 sed -i "s#PREPROCESS-SERVICE-URL#${PREPROCESS_SERVICE_URL}#" ml_workflow.yaml
 sed -i "s#TRAIN-SERVICE-URL#${TRAIN_SERVICE_URL}#" ml_workflow.yaml
