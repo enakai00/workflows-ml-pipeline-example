@@ -29,6 +29,13 @@ gcloud services enable dataflow.googleapis.com
 gcloud services enable ml.googleapis.com
 ```
 
+Clone the repository.
+
+```shell
+cd $HOME
+git clone https://github.com/enakai00/workflows-ml-pipeline-example.git
+```
+
 Deploy services on Cloud Run.
 
 ```shell
