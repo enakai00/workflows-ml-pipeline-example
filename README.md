@@ -1,3 +1,8 @@
+## Note: This repo has been migrated to the GCP coomunity tutorial.
+
+- [Create a custom machine learning pipeline with Workflows and serverless services](https://github.com/GoogleCloudPlatform/community/blob/master/tutorials/ml-pipeline-with-workflows/index.md)
+
+---
 # workflows-ml-pipeline-example
 
 This example shows how you can use [Cloud Run](https://cloud.google.com/run) and [Cloud Workflows](https://cloud.google.com/workflows) to create a simple ML pipeline. The ML usecase is based on the [babyweight model example](https://github.com/GoogleCloudPlatform/training-data-analyst/blob/master/blogs/babyweight_keras/babyweight.ipynb).
